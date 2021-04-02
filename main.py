@@ -1,58 +1,35 @@
-#reply_markup=keyboard1
-#bot.send_message(message.chat.id, '')
 import telebot
 import time
-from sqlighter import SQLighter
-
-#Токен и клавиатура
+import vk
+import govno
+import tg_analytic
+# Токен и клавиатура
 bot = telebot.TeleBot('1692814273:AAFQ7UzpKP9X2JGVGeWtv1jKgRNCcZn0XHo')
 keyboard1 = telebot.types.ReplyKeyboardMarkup(True, True)
-keyboard1.row('Наши стикеры', 'Ссылки', 'О нас', 'Наша музыка', 'Подписаться', 'Отписаться')
-#dp = Dispatcher(bot1)
-db = SQLighter('db.db')
+keyboard1.row('Наши стикеры', 'Ссылки', 'О нас', 'Наша музыка', 'Последняя новость группы')
 
-#Начальные сообщения
+# Начальные сообщения
 @bot.message_handler(commands=['start'])
 def start(message):
+    tg_analytic.statistics(message.chat.id, message.text)
     bot.send_message(message.chat.id, 'Привет!')
     time.sleep(1)
     bot.send_message(message.chat.id, 'Это бот слишкомлично')
     time.sleep(1)
     bot.send_message(message.chat.id, 'Выберите, что вам нужно:', reply_markup=keyboard1)
 
-#Команда подписки
-@bot.message_handler(commands=['subscribe'])
-def subscribe(message):
-    if (not db.subscriber_exists(message.from_user.id)):
-        # если юзера нет в базе, добавляем его
-        db.add_subscriber(message.from_user.id)
-    else:
-        # если он уже есть, то просто обновляем ему статус подписки
-        db.update_subscription(message.from_user.id, True)
-
-    bot.send_message(message.chat.id, "Вы успешно подписались на рассылку!\nЖдите, скоро выйдут новые обзоры и вы узнаете о них первыми =)")
-
-
-# Команда отписки
-@bot.message_handler(commands=['unsubscribe'])
-def unsubscribe(message):
-    if (not db.subscriber_exists(message.from_user.id)):
-        # если юзера нет в базе, добавляем его с неактивной подпиской (запоминаем)
-        db.add_subscriber(message.from_user.id, False)
-        bot.send_message(message.chat.id, "Вы итак не подписаны.")
-    else:
-        # если он уже есть, то просто обновляем ему статус подписки
-        db.update_subscription(message.from_user.id, False)
-        bot.send_message(message.chat.id, "Вы успешно отписаны от рассылки.")
-
-#О нас
+# О нас
 @bot.message_handler(commands=['about'])
 def about(message):
+    tg_analytic.statistics(message.chat.id, message.text)
     bot.send_message(message.chat.id, 'Привет,друг! Мы группа из Губкина. Играем рок в своё удовольствие. Можешь ознакомиться с нашим творчеством;) По кнопке найдёте все ссылки. Yда4и¡')
 
-#Ссылки
+
+# Ссылки
 @bot.message_handler(commands=['links'])
 def links(message):
+    tg_analytic.statistics(message.chat.id, message.text)
+
     vk = telebot.types.InlineKeyboardMarkup()
     peoples = telebot.types.InlineKeyboardMarkup()
     link = telebot.types.InlineKeyboardMarkup()
@@ -88,9 +65,10 @@ def links(message):
     bot.send_message(message.chat.id, "Личные страницы", reply_markup=peoples)
 
 
-# Музыка
-#@bot.message_handler(commands=['music'])
+#Музыка
+@bot.message_handler(commands=['music'])
 def music(message):
+    tg_analytic.statistics(message.chat.id, message.text)
     albums = telebot.types.InlineKeyboardMarkup()
     nz = telebot.types.InlineKeyboardButton(text='Не забывай', callback_data='ne')
     albums.add(nz)
@@ -106,7 +84,8 @@ def music(message):
     albums.add(reyv)
     bot.send_message(message.from_user.id, 'Музыка', reply_markup=albums)
 
-#@bot.callback_query_handler(func=lambda call: True)
+
+@bot.callback_query_handler(func=lambda call: True)
 def callback_worker(call):
     if call.data == "sms":
         sms = open("/home/ubuntu/music/слишком личное вариант 3.mp3", "rb")
@@ -143,11 +122,26 @@ def callback_worker(call):
         bot.send_audio(call.message.chat.id, dv1)
         bot.send_audio(call.message.chat.id, "FILEID")
 
+
 @bot.message_handler(commands=['by'])
 def creators(message):
+    tg_analytic.statistics(message.chat.id, message.text)
     bot.send_message(message.chat.id, 'Бот был написан Иваном "Linxum" Смехнёвым. Другие проекты: https://github.com/linxum', reply_markup=keyboard1)
 
-#кнопки клавиатуры
+@bot.message_handler(commands=['vk'])
+def post(message):
+    tg_analytic.statistics(message.chat.id, message.text)
+    text = ''
+    text = vk.send_text(text)
+    bot.send_message(message.chat.id, text)
+    photo = ''
+    photo = vk.send_photo(photo)
+    photo = govno.trans(photo)
+    jpg = open('out.jpg', 'rb')
+    bot.send_photo(message.chat.id, jpg)
+    jpg.close()
+
+# кнопки клавиатуры
 @bot.message_handler(content_types=['text'])
 def keyboards(message):
     if message.text.lower() == 'ссылки':
@@ -155,16 +149,22 @@ def keyboards(message):
     elif message.text.lower() == 'о нас':
         about(message)
     elif message.text.lower() == 'наши стикеры':
+        tg_analytic.statistics(message.chat.id, message.text)
         bot.send_sticker(message.chat.id, 'CAACAgIAAxkBAAECHQlgX6iLBeUihKxdn8FRtWd1mqK4twACwAoAAnYpAAFL1yQdpPpDV64eBA')
         bot.send_message(message.chat.id, 'Теперь просто нажми на этот стикер и ты получишь весь пак!', reply_markup=keyboard1)
     elif message.text.lower() == 'наша музыка':
         music(message)
-    elif message.text.lower() == 'подписаться':
-        subscribe(message)
-    elif message.text.lower() == 'отписаться':
-        unsubscribe(message)
+    elif message.text.lower() == 'последняя новость группы':
+        post(message)
+    elif message.text[:10] == 'статистика' or message.text[:10] == 'Cтатистика':
+        st = message.text.split(' ')
+        if 'txt' in st or 'тхт' in st:
+            tg_analytic.analysis(st,message.chat.id)
+            with open('%s.txt' %message.chat.id ,'r',encoding='UTF-8') as file:
+                bot.send_document(message.chat.id,file)
+                tg_analytic.remove(message.chat.id)
+        else:
+            messages = tg_analytic.analysis(st,message.chat.id)
+            bot.send_message(message.chat.id, messages)
 
 bot.polling()
-#sms = open("/home/ubuntu/music/слишком личное вариант 3.mp3", "rb")
-#bot.send_audio(message.chat.id, sms)
-#bot.send_audio(message.chat.id, "FILEID")
