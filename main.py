@@ -6,7 +6,7 @@ import tg_analytic
 from telebot import types
 
 # Токен и клавиатура
-bot = telebot.TeleBot('1692814273:AAFQ7UzpKP9X2JGVGeWtv1jKgRNCcZn0XHo')
+bot = telebot.TeleBot('<YOUR TOKEN>')
 keyboard1 = types.ReplyKeyboardMarkup(True, True)
 keyboard1.add('Наши стикеры', 'Ссылки', 'О нас', 'Наша музыка', 'Последняя новость группы')
 
